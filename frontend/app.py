@@ -40,18 +40,23 @@ with st.sidebar:
     try:
         health = api_client.get_health()
         st.success("Backend online")
+        # .get() with defaults: an older backend version may not send every
+        # field, and the sidebar must never crash the whole page.
+        total = health.get("historical_tickets", 0)
+        resolved = health.get("resolved_tickets")
         c1, c2 = st.columns(2)
-        c1.metric("Resolved", health["resolved_tickets"],
+        c1.metric("Resolved", resolved if resolved is not None else "?",
                   help="Resolved tickets used for matching")
-        c2.metric("All", health["historical_tickets"],
-                  help="Resolved + Open tickets in the database")
-        if health["llm_configured"]:
-            st.info(f"LLM: Groq `{health['llm_model']}`")
+        c2.metric("All", total, help="Resolved + Open tickets in the database")
+        if resolved is None:
+            st.warning("Backend is an older version. Restart it from the latest code.")
+        if health.get("llm_configured"):
+            st.info(f"LLM: Groq `{health.get('llm_model', '?')}`")
         else:
             st.warning("LLM: no GROQ_API_KEY - fallback mode")
-        st.caption(f"Similarity threshold: {health['similarity_threshold']:.2f} | "
-                   f"DB: {health['database_backend']}")
-        if health["historical_tickets"] == 0:
+        st.caption(f"Similarity threshold: {health.get('similarity_threshold', 0):.2f} | "
+                   f"DB: {health.get('database_backend', '?')}")
+        if total == 0:
             st.error("Database is empty. Run `python seed_db.py` in the backend folder.")
     except BackendError as exc:
         st.error(str(exc))

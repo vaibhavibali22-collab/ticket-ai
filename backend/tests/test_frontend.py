@@ -79,3 +79,17 @@ def test_streamlit_app_shows_error_on_submit_when_backend_down(monkeypatch):
 def test_backend_url_defaults_to_localhost(monkeypatch):
     monkeypatch.delenv("BACKEND_URL", raising=False)
     assert api_client.backend_url() == "http://127.0.0.1:8000"
+
+
+def test_streamlit_app_survives_older_backend_health(monkeypatch):
+    """An older backend without 'resolved_tickets' must not crash the UI."""
+    from streamlit.testing.v1 import AppTest
+
+    old_health = {"status": "ok", "database": "ok", "database_backend": "sqlite",
+                  "historical_tickets": 57, "llm_configured": True,
+                  "llm_model": "openai/gpt-oss-20b", "similarity_threshold": 0.15}
+    monkeypatch.setattr(api_client, "get_health", lambda: old_health)
+    at = AppTest.from_file(str(APP_PATH), default_timeout=30)
+    at.run()
+    assert not at.exception, "app crashed on an older backend's health response"
+    assert any("older version" in w.value for w in at.warning)
