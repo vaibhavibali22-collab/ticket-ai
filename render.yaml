@@ -1,0 +1,24 @@
+# Render Blueprint: deploys the FastAPI backend as a free web service.
+# Render reads this file when you choose "New > Blueprint" and select the repo.
+services:
+  - type: web
+    name: ticket-ai-backend
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    # Render tells the app which port to use through $PORT; 0.0.0.0 = accept
+    # connections from outside the container.
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      # Free-tier disk is temporary, so load the seed tickets on every boot.
+      - key: AUTO_SEED
+        value: "true"
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-20b
+      # You type the key into Render's dashboard; it is never stored in Git.
+      - key: GROQ_API_KEY
+        sync: false

@@ -1,0 +1,5 @@
+# Frontend-only dependencies (used by Streamlit Community Cloud).
+# Locally, backend/requirements.txt already includes these.
+streamlit>=1.46
+requests>=2.31
+python-dotenv>=1.0
